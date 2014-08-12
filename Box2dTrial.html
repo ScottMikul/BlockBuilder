@@ -1,0 +1,483 @@
+<html>
+   <head>
+      <title>Box2dWeb Demo</title>
+   </head>
+   <body onload="init();" id='stage'>
+      <canvas id="canvas" width="600" height="400" style="background-color:#333333;" ></canvas>
+	  <div id="platforminfo"></div>
+	  <div id="hasjumped"></div>
+	  <div id="onladder"></div>
+	  <div id="onground"></div>
+	  <div id="rightreleased"></div>
+	  <div id="leftreleased"></div>
+   </body>
+
+   <script src="jquery.js"></script>
+   <script type="text/javascript" src="Box2dWeb-2.1.a.3.min.js"></script>
+   <script type="text/javascript">
+   
+    function init() {
+         var   b2Vec2 = Box2D.Common.Math.b2Vec2
+            ,  b2AABB = Box2D.Collision.b2AABB
+         	,	b2BodyDef = Box2D.Dynamics.b2BodyDef
+         	,	b2Body = Box2D.Dynamics.b2Body
+         	,	b2FixtureDef = Box2D.Dynamics.b2FixtureDef
+         	,	b2Fixture = Box2D.Dynamics.b2Fixture
+         	,	b2World = Box2D.Dynamics.b2World
+         	,	b2MassData = Box2D.Collision.Shapes.b2MassData
+         	,	b2PolygonShape = Box2D.Collision.Shapes.b2PolygonShape
+         	,	b2CircleShape = Box2D.Collision.Shapes.b2CircleShape
+         	,	b2DebugDraw = Box2D.Dynamics.b2DebugDraw
+            ,  b2MouseJointDef =  Box2D.Dynamics.Joints.b2MouseJointDef
+            ;
+         
+         var world = new b2World(
+               new b2Vec2(0, 10)    //gravity
+            ,  true                 //allow sleep
+         );
+         
+         var fixDef = new b2FixtureDef;
+         fixDef.density = 1.0;
+         fixDef.friction = 0.0;
+         fixDef.restitution = 0.0;
+         
+         var bodyDef = new b2BodyDef;
+         
+         //create ground
+         bodyDef.type = b2Body.b2_staticBody;
+	 bodyDef.userData="dirt";
+         fixDef.shape = new b2PolygonShape;
+         fixDef.shape.SetAsBox(20, 2);
+         bodyDef.position.Set(10, 400 / 30 + 1.8);
+         world.CreateBody(bodyDef).CreateFixture(fixDef);
+         bodyDef.position.Set(10, -1.8);
+         world.CreateBody(bodyDef).CreateFixture(fixDef);
+         fixDef.shape.SetAsBox(2, 14);
+         bodyDef.position.Set(-1.8, 13);
+         world.CreateBody(bodyDef).CreateFixture(fixDef);
+         bodyDef.position.Set(21.8, 13);
+         world.CreateBody(bodyDef).CreateFixture(fixDef);
+	 fixDef.shape.SetAsBox(3,.5);
+	 bodyDef.position.Set(0, 12);
+	 world.CreateBody(bodyDef).CreateFixture(fixDef);
+	 
+         
+         //create some objects
+         /*bodyDef.type = b2Body.b2_dynamicBody;
+         for(var i = 0; i < 10; ++i) {
+            if(Math.random() > 0.5) {
+               fixDef.shape = new b2PolygonShape;
+               fixDef.shape.SetAsBox(
+                     Math.random() + 0.1 //half width
+                  ,  Math.random() + 0.1 //half height
+               );
+            } else {
+               fixDef.shape = new b2CircleShape(
+                  Math.random() + 0.1 //radius
+               );
+            }
+            bodyDef.position.x = Math.random() * 10;
+            bodyDef.position.y = Math.random() * 10;
+            world.CreateBody(bodyDef).CreateFixture(fixDef);
+         } */
+         
+		 //this is the hero
+		 
+		 //hero body
+		 bodyDef.type= b2Body.b2_dynamicBody;
+		 bodyDef.position.x= 5.8;
+		 bodyDef.position.y= 4.2;
+		 bodyDef.userData= "hero";
+		 var bodyref = world.CreateBody(bodyDef);
+		 bodyref.SetFixedRotation(true);
+		bodyref.ApplyTorque(new b2Vec2(0,0),bodyref.GetPosition());
+		 
+		 //hero fixture
+		 fixDef.shape= new b2PolygonShape;
+		 fixDef.shape.SetAsOrientedBox(.18,.5, new b2Vec2(0,0),Math.PI);
+		 bodyref.CreateFixture(fixDef);
+		 
+		 //hero foot sensor
+		 fixDef.shape= new b2PolygonShape;
+		 fixDef.shape.SetAsOrientedBox(.16,.02, new b2Vec2(.0,.5),Math.PI);
+		 fixDef.isSensor=true;
+		 fixDef.userData="foot";
+		 bodyref.CreateFixture(fixDef);
+		 
+		 
+		 //hero right sensor
+		 fixDef.shape= new b2PolygonShape;
+		 fixDef.shape.SetAsOrientedBox(.02,.45, new b2Vec2(.18,0),Math.PI);
+		 fixDef.isSensor=true;
+		 fixDef.userData="right";
+		 bodyref.CreateFixture(fixDef);
+		 
+		 
+		 //hero left sensor
+		 fixDef.shape= new b2PolygonShape;
+		 fixDef.shape.SetAsOrientedBox(.02,.45, new b2Vec2(-.18,0),Math.PI);
+		 fixDef.isSensor=true;
+		 fixDef.userData="left";
+		 bodyref.CreateFixture(fixDef);
+		 
+		 
+		 //hero top sensor
+		 fixDef.shape= new b2PolygonShape;
+		 fixDef.shape.SetAsOrientedBox(.16,.02, new b2Vec2(.0,-.5),Math.PI);
+		 fixDef.isSensor=true;
+		 fixDef.userData="top";
+		 bodyref.CreateFixture(fixDef);
+		
+		 
+		 //sensor
+		 bodyDef.type=b2Body.b2_staticBody;
+		 fixDef.shape= new b2PolygonShape;
+		 fixDef.shape.SetAsOrientedBox(.18,.5, new b2Vec2(0,0),Math.PI);
+		 fixDef.isSensor = true;
+		 bodyDef.position.x= 12;
+		 bodyDef.position.y= 8;
+		 bodyDef.userData="sensor";
+		 var sensorbody = world.CreateBody(bodyDef);
+		 sensorbody.SetFixedRotation(true);
+		 var sensorfixture =sensorbody.CreateFixture(fixDef);
+		 
+		 //platform
+		 bodyDef.type=b2Body.b2_kinematicBody;
+		 fixDef.shape= new b2PolygonShape;
+		 fixDef.shape.SetAsOrientedBox(2.0,.18, new b2Vec2(0,0),Math.PI);
+		 fixDef.friction=1.0;
+		 fixDef.isSensor= false;
+		 bodyDef.position.x= 12;
+		 bodyDef.position.y= 12;
+		 bodyDef.userData="platform";
+		 var platform = world.CreateBody(bodyDef);
+		 var platformfixture =platform.CreateFixture(fixDef);
+		 platform.SetLinearVelocity(new b2Vec2(4,0));
+		 
+		 
+
+		 		 
+		 //ladder
+		 bodyDef.type=b2Body.b2_staticBody;
+		 fixDef.shape= new b2PolygonShape;
+		 fixDef.shape.SetAsOrientedBox(.18,2, new b2Vec2(0,0),Math.PI);
+		 fixDef.isSensor= true;
+		 bodyDef.position.x= 8;
+		 bodyDef.position.y= 8;
+		 bodyDef.userData="ladder";
+		 var ladder = world.CreateBody(bodyDef);
+		 var ladderfixture =ladder.CreateFixture(fixDef);
+
+		//Add listeners for contact
+		var b2Listener = Box2D.Dynamics.b2ContactListener;
+		var listener = new b2Listener;
+
+		//quick and dirty placeholder for if jumped
+		var hasjumped = false;
+		var onground = false;
+		var onplatform = false;
+		var onladder=false;
+		$("#platforminfo").html("onplatfrom: "+ JSON.stringify(onplatform));
+		$("#hasjumped").html("hasjumped: "+ JSON.stringify(hasjumped));
+		$("#onladder").html("onladder: "+ JSON.stringify(onladder));
+		$("#onground").html("onground: "+ JSON.stringify(onground));
+
+		function contactFixtureUserDataEquals(con,str){			
+			return con.GetFixtureA().GetUserData()==str||con.GetFixtureB().GetUserData()==str;	
+			
+		}
+		function contactBodyUserDataEquals(con,str){			
+			return con.GetFixtureA().GetBody().GetUserData()==str||con.GetFixtureB().GetBody().GetUserData()==str;	
+			
+		}
+		listener.BeginContact = function(contact) {
+			//console.log(contact.GetFixtureA().GetBody().GetUserData());
+			if(contactFixtureUserDataEquals(contact,"foot")){
+				console.log("we have feet contact");
+			}
+			console.log("foot: " +contactFixtureUserDataEquals(contact,"foot")+"platform: "+contactBodyUserDataEquals(contact,"platform"));
+			if (contactFixtureUserDataEquals(contact,"foot") && contactBodyUserDataEquals(contact,"platform")) {
+				
+				onplatform= true;				
+				onground=true;
+				hasjumped=false;
+				$("#onground").html("onground: "+ JSON.stringify(onground));
+				$("#hasjumped").html("hasjumped: "+ JSON.stringify(hasjumped));
+				$("#platforminfo").html("onplatfrom: "+ JSON.stringify(onplatform));
+			}
+			//hits ladder
+			if (contactBodyUserDataEquals(contact,"hero") && contactBodyUserDataEquals(contact,"ladder")) {
+				onladder=true;
+				//onladder=true;
+				$("#onladder").html("onladder: "+ JSON.stringify(onladder));
+				
+			}
+			if(contactBodyUserDataEquals(contact,"hero")){
+				if(contactBodyUserDataEquals(contact,"dirt")){
+					onground=true;
+					hasjumped=false;
+					$("#onground").html("onground: "+ JSON.stringify(onground));
+					$("#hasjumped").html("hasjumped: "+ JSON.stringify(hasjumped));
+				}
+
+			}
+			
+		}
+		
+
+		listener.EndContact = function(contact) {
+			// console.log(contact.GetFixtureA().GetBody().GetUserData());
+			if (contactBodyUserDataEquals(contact,"hero") && contactBodyUserDataEquals(contact,"platform")) {
+				onplatform= false;
+				onground=false;
+				$("#platforminfo").html("onplatfrom: "+ JSON.stringify(onplatform));
+			}
+			if (contactBodyUserDataEquals(contact,"hero")&& contactBodyUserDataEquals(contact,"ladder")) {
+				onladder=false;
+				//onladder=true;
+				$("#onladder").html("onladder: "+ JSON.stringify(onladder));
+			}
+			//if jumped off ladder
+			if(contactBodyUserDataEquals(contact,"hero")){
+				if(contactBodyUserDataEquals(contact,"ladder") ){
+					onground=false;
+					hasjumped=true;
+					$("#onground").html("onground: "+ JSON.stringify(onground));
+					$("#hasjumped").html("hasjumped: "+ JSON.stringify(hasjumped));
+				}
+
+			}
+			if(contactFixtureUserDataEquals(contact,"foot")){
+				console.log("made onground false");
+				$("#onground").html("onground: "+ JSON.stringify(onground));
+				onground=false;
+			}
+		}
+
+		listener.PostSolve = function(contact, impulse) {
+			if (contact.GetFixtureA().GetBody().GetUserData() == "hero" && contact.GetFixtureB().GetBody().GetUserData() == "sensor") {
+				console.log("PostSolve contact.");
+			}
+		}
+
+		listener.PreSolve = function(contact, oldManifold) {
+			// PreSolve
+			if (contact.GetFixtureA().GetBody().GetUserData() == "hero" && contact.GetFixtureB().GetBody().GetUserData() == "sensor") {
+				console.log("Pre solve contact.");
+			}
+		}
+
+		world.SetContactListener(listener);
+         //setup debug draw
+         var debugDraw = new b2DebugDraw();
+			debugDraw.SetSprite(document.getElementById("canvas").getContext("2d"));
+			debugDraw.SetDrawScale(30.0);
+			debugDraw.SetFillAlpha(0.5);
+			debugDraw.SetLineThickness(1.0);
+			debugDraw.SetFlags(b2DebugDraw.e_shapeBit | b2DebugDraw.e_jointBit);
+			world.SetDebugDraw(debugDraw);
+         
+		 
+         window.setInterval(update, 1000 / 60);     
+
+		 var left=false;
+		 var right=false;
+		 var jump=false;
+		 var keysarray =[left,right,jump];
+		  document.addEventListener("keydown", function(e) {
+		  key= e.keyCode;				
+				//space
+			  if (key == 32) {
+					keysarray[2]=true;
+				//body.ApplyForce(new b2Vec2(0,-120),body.GetPosition());
+			   }
+			  if (key == 37) {
+				 //body.ApplyForce(new b2Vec2(-10,0),body.GetPosition());
+				 console.log('pressing left');
+					keysarray[0]=true;
+			   }
+				//up
+			  if (key == 38) {
+					keysarray[3]=true;
+				//body.ApplyForce(new b2Vec2(0,-120),body.GetPosition());
+			   }
+				//right
+				if (key == 39) {
+					keysarray[1]=true;
+				// body.ApplyForce(new b2Vec2(10,0),body.GetPosition());
+			   }
+			   //down
+			   if(key==40){
+					keysarray[5]=true;
+			   }
+         }, true);
+		 var upReleased = false;
+		 var downReleased = false;
+		 var leftReleased = false;
+		 var rightReleased = false;
+		var applyupwardstorque=true;
+		 $("#rightreleased").html("rightreleased: "+ JSON.stringify(rightReleased));
+		 document.addEventListener("keyup", function(e) {
+		  key= e.keyCode;
+			//space
+			  if (key == 32) {
+					keysarray[2]=false;
+				//body.ApplyForce(new b2Vec2(0,-120),body.GetPosition());
+			   }
+			   //left
+			  if (key == 37) {
+				 //body.ApplyForce(new b2Vec2(-10,0),body.GetPosition());
+					keysarray[0]=false;
+					leftReleased=true;
+			   }
+				//up
+			  if (key == 38) {
+					keysarray[3]=false;
+					upReleased = true;
+				//body.ApplyForce(new b2Vec2(0,-120),body.GetPosition());
+			   }
+				//right
+				if (key == 39) {
+					keysarray[1]=false;
+					rightReleased = true;
+					$("#rightreleased").html("rightreleased: "+ JSON.stringify(rightReleased));
+				// body.ApplyForce(new b2Vec2(10,0),body.GetPosition());
+			   }
+			   //down
+			   if(key==40){
+					keysarray[5]=false;
+					downReleased = true;
+			   }
+         }, true);
+
+         function getBodyCB(fixture) 
+		 {
+            if(fixture.GetBody().GetType() != b2Body.b2_staticBody) 
+			{
+               if(fixture.GetShape().TestPoint(fixture.GetBody().GetTransform(), mousePVec)) 
+			   {
+                  selectedBody = fixture.GetBody();
+                  return false;
+               }
+            }
+            return true;
+         }
+         
+         //update
+         
+		 function updateforces()
+		 {
+			if(keysarray[0])
+			{
+				if(bodyref.GetLinearVelocity().x>-4){
+					bodyref.ApplyImpulse(new b2Vec2(-.5,0),bodyref.GetPosition());
+				}
+			}			
+			if(keysarray[1])
+			{
+				if(bodyref.GetLinearVelocity().x<4){
+					bodyref.ApplyImpulse(new b2Vec2(.5,0),bodyref.GetPosition());
+				}
+			}			
+			if(keysarray[2])
+			{
+				console.log("this.hasjumped : "+hasjumped);
+				if(hasjumped==false && onground==true){
+				        bodyref.SetLinearVelocity(new b2Vec2(bodyref.GetLinearVelocity().x,0));
+					bodyref.ApplyImpulse(new b2Vec2(0,-5),bodyref.GetPosition());
+					//console.log("x: "+bodyref.GetV().X);
+					hasjumped=true;
+				}
+			}
+			//if up pressed or down pressed
+			if(keysarray[3]||keysarray[5]){
+				if(onladder){
+					bodyref.SetLinearVelocity(new b2Vec2(0,0));
+					if(needUpdwardsTorque){
+						bodyref.ApplyTorque(new b2Vec2(0,-10),bodyref.GetPosition());
+					}
+					needUpwardsTorque=false;
+				}
+			}
+			if(onladder){
+
+			}
+			
+
+			if(onplatform){
+				 
+				if(rightReleased||leftReleased){
+					bodyref.SetLinearVelocity(new b2Vec2(platform.GetLinearVelocity().x,bodyref.GetLinearVelocity().y));
+					rightReleased=false;
+					leftReleased=false;
+				}
+
+			}
+			if(onground){
+				if(rightReleased||leftReleased){
+					bodyref.SetLinearVelocity(new b2Vec2(0,bodyref.GetLinearVelocity().y));
+					$("#rightreleased").html("rightreleased: "+ JSON.stringify(rightReleased));
+					rightReleased=false;
+					leftReleased=false;
+				}
+			}
+			if(keysarray[5]){
+				if(applyupwardstorque){
+					bodyref.ApplyTorque(new b2Vec2(0,0),bodyref.GetPosition());
+				}
+				applyupwardstorque= false;
+			}
+		 }
+		 function movePlatform()
+		 {
+			if(platform.GetPosition().x>12){
+				platform.SetLinearVelocity(new b2Vec2(-1,0));
+				if(onplatform &&!leftReleased&&!rightReleased){
+					bodyref.SetLinearVelocity(new b2Vec2(-1,0));
+				}
+			}
+			if(platform.GetPosition().x<6){
+				platform.SetLinearVelocity(new b2Vec2(1,0))
+				if(onplatform &&!leftReleased&&!rightReleased){
+					bodyref.SetLinearVelocity(new b2Vec2(1,0));
+				}
+			}
+		 }
+         function update() {
+
+            updateforces();
+			movePlatform();
+            world.Step(1 / 60, 10, 10);
+            world.DrawDebugData();
+			
+            world.ClearForces();
+         };
+         
+         //helpers
+         
+         //http://js-tut.aardon.de/js-tut/tutorial/position.html
+         function getElementPosition(element) {
+            var elem=element, tagname="", x=0, y=0;
+           
+            while((typeof(elem) == "object") && (typeof(elem.tagName) != "undefined")) {
+               y += elem.offsetTop;
+               x += elem.offsetLeft;
+               tagname = elem.tagName.toUpperCase();
+
+               if(tagname == "BODY")
+                  elem=0;
+
+               if(typeof(elem) == "object") {
+                  if(typeof(elem.offsetParent) == "object")
+                     elem = elem.offsetParent;
+               }
+            }
+
+            return {x: x, y: y};
+         }
+
+		
+      };
+	</script>
+
+</html>

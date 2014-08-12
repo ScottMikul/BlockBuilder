@@ -1,0 +1,75 @@
+<html>
+<body>
+
+<table border='none'>
+<tr>
+<td>6300</td><td><textarea id='6300' value='haha' onchange='update()'></textarea></td>
+</tr>
+<tr>
+<td>4800</td><td><textarea id='4800' value='haha' onchange='update()'></textarea></td>
+</tr>
+<tr>
+<td>3150</td><td><textarea id='3150' value='haha' onchange='update()'></textarea></td>
+</tr>
+<tr>
+<td>1350</td><td><textarea id='1350' value='haha' onchange='update()'></textarea></td>
+</tr>
+<tr>
+<td>450</td><td><textarea id='450' value='haha' onchange='update()'></textarea></td>
+</tr>
+<tr>
+<td>total ip needed left: </td> <td><div id='result'></div></td>
+</tr>
+<tr>
+<td>first wins needed for remaining ip: </td> <td><div id='wins'></div></td>
+</tr>
+<tr>
+<td>how hours this would take: </td> <td><div id='hours'></div></td>
+</tr>
+<tr>
+<td>how much rp this would cost: </td> <td><div id='rp'></div></td>
+</tr>
+<tr>
+<td>how much money this rp would cost: </td> <td><div id='money'></div></td>
+</tr>
+<tr>
+<td>how much money you make per hour: </td> <td><div id='perhour'></div></td>
+</tr>
+</table>
+
+
+<div id='wins'></div>
+<script type='text/javascript'>
+function update(){
+var ipsum= (6300*document.getElementById('6300').value)+
+(4800*document.getElementById('4800').value)+
+(3150*document.getElementById('3150').value)+
+(1350 *document.getElementById('1350').value)+
+(450*document.getElementById('450').value);
+document.getElementById('result').innerHTML = ipsum;
+
+var fwins = ipsum/225;
+document.getElementById('wins').innerHTML = fwins;
+
+var hoursleft = fwins*.58333;
+document.getElementById('hours').innerHTML = hoursleft;
+
+rpsum= (975*document.getElementById('6300').value)+
+(880*document.getElementById('4800').value)+
+(790*document.getElementById('3150').value)+
+(585 *document.getElementById('1350').value)+
+(260*document.getElementById('450').value);
+document.getElementById('rp').innerHTML = rpsum;
+
+var moneyforrp = rpsum/150;
+document.getElementById('money').innerHTML = moneyforrp;
+
+var moneyperhour = moneyforrp/hoursleft;
+document.getElementById('perhour').innerHTML = moneyperhour;
+}
+
+
+</script>
+</body>
+
+</html>

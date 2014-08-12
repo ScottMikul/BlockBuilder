@@ -1,0 +1,17 @@
+<html>
+   <head>
+   </head>
+   <body onload="init();" id='stage'>
+	  <div id="blah"></div>
+   </body>
+   <script src="jquery.js"></script>
+   <script type="text/javascript">
+		function init(){
+			var temp= true;
+			//prints stuff
+			//$("#blah").html("stuff");
+			//this prints nothing
+			$("#blah").html(JSON.stringify(temp));
+		}
+   </script>
+</html>
